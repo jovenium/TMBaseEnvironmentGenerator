@@ -15,3 +15,9 @@ Feel free to contribute to the projet 🚀.
 ## Examples
 ### Example 1 : Default Parameter
 ![oui](https://github.com/jovenium/TMBaseEnvironmentGenerator/blob/main/Examples/DefaultParams.PNG)
+
+### Example 2 : Persistence = 0.8
+![Persistence_0_8](https://github.com/jovenium/TMBaseEnvironmentGenerator/blob/main/Examples/Persistence_0_8.PNG)
+
+### Example 3 : S_WaterLevel = 22
+![S_WaterLevel_22](https://github.com/jovenium/TMBaseEnvironmentGenerator/blob/main/Examples/S_WaterLevel_22.PNG)
