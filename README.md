@@ -13,5 +13,5 @@ You can play with some settings in the script header. For the S_API settings, yo
 Feel free to contribute to the projet 🚀.
 
 ## Examples
-### Example 1 : Default Parameters
-
+### Example 1 : Default Parameter
+![oui](https://github.com/jovenium/TMBaseEnvironmentGenerator/blob/main/Examples/DefaultParams.PNG)
