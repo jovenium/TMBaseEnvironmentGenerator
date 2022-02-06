@@ -1,0 +1,351 @@
+#RequireContext CMapEditorPlugin
+
+/**
+* Made by ATN04 and Jovenium for TrackMania2020
+* Manchot
+*/
+
+#Include "MathLib" as ML
+#Include "TextLib" as TL
+
+// Bigbang1112 libs : https://github.com/BigBang1112/universe-library-set
+#Include "Libs/BigBang1112/Http.Script.txt" as Http
+
+#Const	C_ScriptName    "MapBuilder.Script.txt"
+
+#Setting S_NumLines 0
+#Setting S_GetPerlinByAPI True
+#Setting S_API_OctaveCount 4 //4
+#Setting S_API_Amplitude 0.1 //0.1
+#Setting S_API_Persistence 0.2 //0.2
+#Setting S_WaterLevel 20 //20
+#Setting S_GrassMaxLevel 24 //24
+#Setting S_MinY 0
+#Setting S_MidYFromGroundLevel 15
+
+//github project by AndyShora : https://github.com/andyshora/perlin-noise-api
+#Const C_UrlBase "http://noise.shora.net/noise/"
+
+//python line to get this table : [str(x) + " => "+ str(2**x) for x in range(32,-1,-1)]
+#Const C_BinTable [
+  32 => 4294967296,
+  31 => 2147483648,
+  30 => 1073741824,
+  29 => 536870912,
+  28 => 268435456,
+  27 => 134217728,
+  26 => 67108864,
+  25 => 33554432,
+  24 => 16777216,
+  23 => 8388608,
+  22 => 4194304,
+  21 => 2097152,
+  20 => 1048576,
+  19 => 524288,
+  18 => 262144,
+  17 => 131072,
+	16 => 65536, 
+	15 => 32768, 
+	14 => 16384, 
+	13 => 8192, 
+	12 => 4096, 
+	11 => 2048, 
+	10 => 1024, 
+	9 => 512,
+	8 => 256,
+	7 => 128,
+	6 => 64,
+	5 => 32,
+	4 => 16,
+	3 => 8,
+	2 => 4,
+	1 => 2,
+	0 => 1
+	
+]
+
+Text GetBinValue(Integer _x){
+	declare Integer x = ML::Abs(_x);
+	declare Text Result = "";
+	
+	foreach(Key => Value in C_BinTable){
+		if(x >= Value){
+			Result ^= "1";
+			x -= Value;
+		}else{
+			Result ^= "0";
+		}
+	}
+	return Result;
+}
+
+Integer GetIntValue(Text _BinValue){
+	declare Integer x = 0;
+	declare Text[] CharArray = TL::RegexFind("(1|0){1}", _BinValue, "g");
+	declare i = 0; 
+	foreach (Key => Value in C_BinTable){
+		x += Value * TL::ToInteger(CharArray[i]);
+		i += 1;
+	}	
+	return x;
+}
+
+Integer decalage(Integer _x, Integer _step, Boolean _up){
+	declare Integer Result = _x;
+
+	if(_up){
+		for(i, 1, _step){
+			Result *= 2;
+		}
+	}else{
+		for(i, 1, _step){
+			Result /= 2;
+		}
+	}
+	
+	//Result = GetIntValue(BinValue);
+	log(Result);
+	
+	return Result;
+}
+
+// return x | y
+Integer BinaryOrOperator(Integer _x, Integer _y){
+	declare Text[] xBin = TL::RegexFind("(1|0){1}", GetBinValue(_x), "g");
+	declare Text[] yBin = TL::RegexFind("(1|0){1}", GetBinValue(_y), "g");
+	declare Text resultBin = "";
+	for(i, 0, xBin.count - 1){
+		if(xBin[i] == "0" && yBin[i] == "0"){
+			resultBin ^= "0";
+		}else{
+			resultBin ^= "1";
+		}
+	}
+	return GetIntValue(resultBin);
+}
+
+// return x & y
+Integer BinaryAndOperator(Integer _x, Integer _y){
+	declare Text[] xBin = TL::RegexFind("(1|0){1}", GetBinValue(_x), "g");
+	declare Text[] yBin = TL::RegexFind("(1|0){1}", GetBinValue(_y), "g");
+	declare Text resultBin = "";
+	for(i, 0, xBin.count - 1){
+		if(xBin[i] == "1" && yBin[i] == "1"){
+			resultBin ^= "1";
+		}else{
+			resultBin ^= "0";
+		}
+	}
+	return GetIntValue(resultBin);
+}
+
+// return x ^ y
+Integer BinaryXOrOperator(Integer _x, Integer _y){
+	declare Text[] xBin = TL::RegexFind("(1|0){1}", GetBinValue(_x), "g");
+	declare Text[] yBin = TL::RegexFind("(1|0){1}", GetBinValue(_y), "g");
+	declare Text resultBin = "";
+	for(i, 0, xBin.count - 1){
+		if(xBin[i] != yBin[i]){
+			resultBin ^= "1";
+		}else{
+			resultBin ^= "0";
+		}
+	}
+	return GetIntValue(resultBin);
+}
+
+
+Real interpolate(Real a0, Real a1, Real w) {
+	 	if (0.0 > w) return a0;
+    if (1.0 < w) return a1;
+    //return (a1 - a0) * w + a0;
+		return (a1 - a0) * ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w) + a0;
+   
+}
+
+Vec2 randomGradient2(Integer ix, Integer iy) {
+    
+		declare Integer w = 32; //sur 32 bit
+		declare Integer s = 16; //sur 16 bit
+		declare Integer a = ix;
+		declare Integer b = iy;
+		a *= 3284157443;
+		b = BinaryXOrOperator(b, BinaryOrOperator(decalage(a, s,True), decalage(a,(w-s),False)));
+		b *= 1911520717;
+		a = BinaryXOrOperator(a, BinaryOrOperator(decalage(b, s,True), decalage(b,(w-s),False)));
+		a *= 2048419325;
+		declare Real random = a * (3.14159265 / 2147483648);
+    /*const unsigned w = 8 * sizeof(unsigned);
+    const unsigned s = w / 2; // rotation width
+    unsigned a = ix, b = iy;
+    a *= 3284157443; b ^= a << s | a >> w-s;
+    b *= 1911520717; a ^= b << s | b >> w-s;
+    a *= 2048419325;*/
+   // declare Real random = a * (3.14159265 / ~(~0u >> 1)); // in [0, 2*Pi]
+		yield;
+    declare Vec2 v;
+		//declare Real random = ML::Rand(0.0, ML::Pi*2);
+
+    v[0] = ML::Sin(random);
+		v[1] = ML::Cos(random);
+    return v;
+}
+
+Vec2 randomGradient(Integer _ix, Integer _iy) {
+
+    declare Vec2 v;
+    declare Real random = ML::Rand(0.0, ML::Pi*2);
+
+    v[0] = ML::Sin(random);
+    v[1] = ML::Cos(random);
+    return v;
+}
+
+// Computes the dot product of the distance and gradient vectors.
+Real dotGridGradient(Integer _ix, Integer _iy, Real _x, Real _y) {
+    // Get gradient from Integereger coordinates
+    declare Vec2 gradient = randomGradient(_ix, _iy);
+
+    // Compute the distance vector
+    declare Real dx = _x - ML::ToReal(_ix);
+    declare Real dy = _y - ML::ToReal(_iy);
+
+    // Compute the dot-product
+    return (dx*gradient[0] + dy*gradient[1]);
+}
+
+// Compute Perlin noise at coordinates x, y
+Real perlin(Real _x, Real _y) {
+    // Determine grid cell coordinates
+    declare Integer x0 = ML::FloorInteger(_x);
+    declare Integer x1 = x0 + 1;
+    declare Integer y0 = ML::FloorInteger(_y);
+    declare Integer y1 = y0 + 1;
+
+    // Determine Integererpolation weights
+    // Could also use higher order polynomial/s-curve here
+    declare Real sx = _x - ML::ToReal(x0);
+    declare Real sy = _y - ML::ToReal(y0);
+
+    // Integererpolate between grid poInteger gradients
+    declare Real n0;
+		declare Real n1;
+		declare Real ix0;
+		declare Real ix1;
+		declare Real value;
+
+    n0 = dotGridGradient(x0, y0, _x, _y);
+    n1 = dotGridGradient(x1, y0, _x, _y);
+    ix0 = interpolate(n0, n1, sx);
+
+    n0 = dotGridGradient(x0, y1, _x, _y);
+    n1 = dotGridGradient(x1, y1, _x, _y);
+    ix1 = interpolate(n0, n1, sx);
+    value = interpolate(ix0, ix1, sy);
+		
+    return value;
+}
+
+Real[][] GetPerlinByAPI(Integer _x, Integer _z){
+	declare Text Url = C_UrlBase ^ _x ^ "/" ^ _z;
+	Url ^= "?octaveCount="^S_API_OctaveCount^"&amplitude="^S_API_Amplitude^"&persistence="^S_API_Persistence;
+	declare Text Response = Http::SyncGET_Result(Url);
+	Response = TL:: Replace(Response, "[", "");//remove [ and ] from response
+	Response = TL:: Replace(Response, "]", "");
+	declare Real[][] PerlinMap;
+	declare Real[] tmp;
+	declare Text[] RealValues = TL::Split(",", Response);
+	foreach(Value in RealValues){
+		if(tmp.count == _z){
+			PerlinMap.add(tmp);
+			tmp.clear();
+		}
+		tmp.add(TL::ToReal(Value));
+	}
+	PerlinMap.add(tmp);
+	return PerlinMap;
+}
+
+CBlockModel GetBlockModel(Integer _y){
+	declare Text BockName;
+	if(_y < S_WaterLevel){
+		BockName = "PlatformWaterBase";//water plate
+	}else if(_y <= S_GrassMaxLevel){
+		BockName = "DecoPlatformBase";//grass plate
+	}else{
+		BockName = "DecoPlatformIceBase";//snow plate
+	}
+	foreach(b in BlockModels){
+		if(b.Name == BockName){
+			return b;
+		}
+	}	
+	return Null; 
+}
+
+CBlockModel GetWaterBlock(){
+	foreach(b in BlockModels){
+		if(b.Name == "DecoWallWaterBase"){//PoolBlock
+			return b;
+		}
+	}	
+	return Null; 
+}
+
+Void PlacerBlock(Integer _x, Integer _y, Integer _z, CBlockModel _block){
+	if(_block.Name == "PlatformWaterBase"){
+		declare CBlockModel WaterBlock = GetWaterBlock();
+		for(i, _y, S_WaterLevel - 1){
+			PlaceBlock(WaterBlock, <_x, i, _z>, ::CardinalDirections::North);
+		}
+		PlaceBlock(_block, <_x, S_WaterLevel, _z>, ::CardinalDirections::North);
+	}else{
+		PlaceBlock(_block, <_x, _y, _z>, ::CardinalDirections::North);
+	}
+}
+
+main(){
+
+	declare Int3 mapSize = Map.Size;
+	declare CBlockModel block;
+	declare Real[][] MapNoise;//noise map
+	declare Real[] tmp;
+	declare Integer j;
+	declare Integer i;
+	declare Integer MaxNumLines = mapSize[0];
+	
+	RemoveAll();
+	
+	if(S_NumLines != 0)	MaxNumLines = S_NumLines;
+	
+	if(S_GetPerlinByAPI){
+		MapNoise = GetPerlinByAPI(mapSize[0], mapSize[2]);
+		
+	}else{
+		for(i, 0, mapSize[0] - 1){
+			for(j, 0, mapSize[2] - 1){
+				tmp.add(perlin(ML::ToReal(i)/3, ML::ToReal(j)/3));
+			}
+			MapNoise.add(tmp);
+			tmp.clear();
+		}
+	}
+
+	for(i, 0, mapSize[0] - 1){
+		for(j, 0, mapSize[2] - 1){
+			block = GetBlockModel(ML::FloorInteger((MapNoise[i][j] + 1) * S_MidYFromGroundLevel + S_MinY));
+			PlacerBlock(i, ML::FloorInteger((MapNoise[i][j] + 1) * S_MidYFromGroundLevel + S_MinY), j, block);
+			if(j % 50 == 0){
+				yield;
+			}
+		}
+		if(i + 1 == S_NumLines){
+			break;
+		}
+		yield;
+	}	
+	
+	while(True){
+		yield;
+	}
+}
