@@ -88,8 +88,6 @@ main(){
 	declare CBlockModel block;
 	declare Real[][] MapNoise;//noise map
 	declare Real[] tmp;
-	declare Integer j;
-	declare Integer i;
 	declare Integer MaxNumLines = mapSize[0];
 	
 	RemoveAll();
