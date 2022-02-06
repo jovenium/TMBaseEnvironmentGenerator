@@ -11,14 +11,16 @@
 // Bigbang1112 libs : https://github.com/BigBang1112/universe-library-set
 #Include "Libs/BigBang1112/Http.Script.txt" as Http
 
-#Setting S_NumLines 0
+/*SETTINGS*/
 #Setting S_API_OctaveCount 4 //4
 #Setting S_API_Amplitude 0.1 //0.1
 #Setting S_API_Persistence 0.2 //0.2
 #Setting S_WaterLevel 20 //20
 #Setting S_GrassMaxLevel 24 //24
 #Setting S_MinY 0
-#Setting S_MidYFromGroundLevel 15
+#Setting S_MidYFromGroundLevel 15 // so it's equal to 15 + 9 = 24
+#Setting S_NumLines 0 //use for debug
+
 
 //github project by AndyShora : https://github.com/andyshora/perlin-noise-api
 #Const C_UrlBase "http://noise.shora.net/noise/"
@@ -31,16 +33,16 @@ Real[][] GetPerlinByAPI(Integer _x, Integer _z){
 	Response = TL:: Replace(Response, "[", "");//remove [ and ] from the response
 	Response = TL:: Replace(Response, "]", "");
 	declare Real[][] PerlinMap;
-	declare Real[] tmp;
+	declare Real[] Tmp;
 	declare Text[] RealValues = TL::Split(",", Response);
 	foreach(Value in RealValues){
-		if(tmp.count == _z){
-			PerlinMap.add(tmp);
-			tmp.clear();
+		if(Tmp.count == _z){
+			PerlinMap.add(Tmp);
+			Tmp.clear();
 		}
-		tmp.add(TL::ToReal(Value));
+		Tmp.add(TL::ToReal(Value));
 	}
-	PerlinMap.add(tmp);
+	PerlinMap.add(Tmp);
 	return PerlinMap;
 }
 
@@ -83,23 +85,23 @@ Void PlacerBlock(Integer _x, Integer _y, Integer _z, CBlockModel _block){
 }
 
 main(){
-
-	declare Int3 mapSize = Map.Size;
-	declare CBlockModel block;
-	declare Real[][] MapNoise;//noise map
-	declare Real[] tmp;
-	declare Integer MaxNumLines = mapSize[0];
+	log("--- Start : BaseEnvironmentGenerator.Script.txt plugin.");
+	declare Int3 MapSize = Map.Size;
+	declare CBlockModel ChosenBlock;
+	declare Real[][] MapNoise;
+	declare Real[] Tmp;
+	declare Integer MaxNumLines = MapSize[0];
 	
 	RemoveAll();
 	
 	if(S_NumLines != 0)	MaxNumLines = S_NumLines;
 	
-	MapNoise = GetPerlinByAPI(mapSize[0], mapSize[2]);
+	MapNoise = GetPerlinByAPI(MapSize[0], MapSize[2]);
 
-	for(i, 0, mapSize[0] - 1){
-		for(j, 0, mapSize[2] - 1){
-			block = GetBlockModel(ML::FloorInteger((MapNoise[i][j] + 1) * S_MidYFromGroundLevel + S_MinY));
-			PlacerBlock(i, ML::FloorInteger((MapNoise[i][j] + 1) * S_MidYFromGroundLevel + S_MinY), j, block);
+	for(i, 0, MapSize[0] - 1){
+		for(j, 0, MapSize[2] - 1){
+			ChosenBlock = GetBlockModel(ML::FloorInteger((MapNoise[i][j] + 1) * S_MidYFromGroundLevel + S_MinY));
+			PlacerBlock(i, ML::FloorInteger((MapNoise[i][j] + 1) * S_MidYFromGroundLevel + S_MinY), j, ChosenBlock);
 			if(j % 50 == 0){
 				yield;
 			}
@@ -108,6 +110,6 @@ main(){
 			break;
 		}
 		yield;
-	}	
-	
+	}
+	log("--- End : BaseEnvironmentGenerator.Script.txt plugin.");
 }
