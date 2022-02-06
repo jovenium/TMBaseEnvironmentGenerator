@@ -12,6 +12,7 @@
 #Include "Libs/BigBang1112/Http.Script.txt" as Http
 
 /*SETTINGS*/
+#Setting S_RemoveAllInMap True
 #Setting S_API_OctaveCount 4 //4
 #Setting S_API_Amplitude 0.1 //0.1
 #Setting S_API_Persistence 0.2 //0.2
@@ -92,7 +93,7 @@ main(){
 	declare Real[] Tmp;
 	declare Integer MaxNumLines = MapSize[0];
 	
-	RemoveAll();
+	if(S_RemoveAllInMap) RemoveAll();
 	
 	if(S_NumLines != 0)	MaxNumLines = S_NumLines;
 	
